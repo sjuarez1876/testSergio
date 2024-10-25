@@ -1,0 +1,79 @@
+﻿@page "/personas"
+@inject HttpClient Http
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+@inject NavigationManager NavigationManager
+
+<PageTitle>Video Juegos</PageTitle>
+
+<h1>Administración de Personas WeeClaims</h1>
+<br />
+<br />
+
+@if (personas.Count == 0)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Compañia</th>
+                <th>Contacto</th>
+                <th>Correo</th>
+                <th>Telefono</th>
+                <th></th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var ppersonas in personas)
+            {
+                <tr>
+                    <td>@ppersonas.Compania</td>
+                    <td>@ppersonas.Contacto</td>
+                    <td>@ppersonas.Correo</td>
+                    <td>@ppersonas.Telefono</td>
+                    <td><button class="btn btn-primary" @onclick="@(() => EditPersona(ppersonas.Id))">Editar</button></td>
+                    <td><button class="btn btn-danger" @onclick="@(() => DeletePersona(ppersonas.Id))">Eliminar</button></td>
+
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+<button class="btn btn-primary" @onclick="AddGame">Agregar un nueva persona</button>
+@code {
+    List<Tblpersonas> personas = new List<Tblpersonas>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Simulate asynchronous loading to demonstrate streaming rendering
+        await LoadPersonas();
+    }
+
+    void AddGame()
+    {
+        NavigationManager.NavigateTo("edit-persona");
+    }
+
+    void EditPersona(int id)
+    {
+        NavigationManager.NavigateTo($"edit-persona/{id}");
+    }
+
+    async Task DeletePersona(int id)
+    {
+        await Http.DeleteAsync($"api/personas/{id}");
+        await LoadPersonas();
+    }
+
+    async Task LoadPersonas()
+    {
+        var result = await Http.GetFromJsonAsync<List<Tblpersonas>>("api/personas");
+        if (result is not null)
+            personas = result;
+
+    }
+}
+

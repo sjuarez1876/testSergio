@@ -1,0 +1,122 @@
+﻿@page "/edit-persona"
+@page "/edit-persona/{id:int}"
+@inject HttpClient Http
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+@inject NavigationManager NavigationManager
+
+
+@if (Id == null)
+{
+    <h3>Registro persona</h3>
+}
+else
+{
+    <h3>Editar persona @Pers.Contacto</h3>
+
+}
+<EditForm Model="Pers" OnSubmit="HandleSubmit">
+    <div class="form-group">
+        <label for="title">Compañia</label>
+        <InputText id="title" @bind-Value="Pers.Compania" class="form-control" />
+    </div>
+    <div>
+        <label for="publisher">Contacto</label>
+        <InputText id="publisher" @bind-Value="Pers.Contacto" class="form-control" />
+    </div>
+    <div>
+        <label for="releaseYear">Correo</label>
+        <InputText id="releaseYear" @bind-Value="Pers.Correo" class="form-control" />
+    </div>
+    <div>
+        <label for="releaseYear">Teléfono</label>
+        <InputText id="releaseYear" @bind-Value="Pers.Telefono" class="form-control" />
+    </div>
+    <div>
+        <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+    <br />
+    <div>
+        <label for="mensaje" class="text-danger">@mensaje</label>
+    </div>
+   
+</EditForm>
+
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+    public Tblpersonas Pers { get; set; } = new Tblpersonas();
+    public string mensaje { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Id is not null)
+        {
+            var result = await Http.GetFromJsonAsync<Tblpersonas>($"api/personas/{(int)Id}");
+            if (result is not null)
+                Pers = result;
+        }
+    }
+
+    async Task HandleSubmit()
+    {
+        string contacto = Pers.Contacto;
+        string email = Pers.Correo;
+        mensaje = "";
+
+        if (contacto == null  )
+        {
+            mensaje = "requiere ingrese el contacto";
+            return;
+        }
+
+        if (IsValidEmail(email) == false || email == null)       
+        {
+            
+            mensaje = "formato de correo incorrecto/requiere ingrese el correo";
+            return;
+        }
+
+
+        if (Id is not null)
+            {
+                var result = await Http.PutAsJsonAsync($"api/personas/{Id}", Pers);
+                Pers = await result.Content.ReadFromJsonAsync<Tblpersonas>();
+                NavigationManager.NavigateTo("personas");
+            }
+            else
+            {
+                var result = await Http.PostAsJsonAsync("api/personas", Pers);
+                Pers = await result.Content.ReadFromJsonAsync<Tblpersonas>();
+                NavigationManager.NavigateTo("personas");
+
+            }
+       
+        // else
+        // {
+
+        //     mensaje = "requiere ingrese el contacto/el formato de correo es incorrecto";
+        //     return;
+        // }
+    }
+
+   public bool IsValidEmail(string email)
+    {
+        var trimmedEmail = email.Trim();
+
+        if (trimmedEmail.EndsWith("."))
+        {
+            return false; // suggested by @TK-421
+        }
+        try
+        {
+            var addr = new System.Net.Mail.MailAddress(email);
+            return addr.Address == trimmedEmail;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+}
+
